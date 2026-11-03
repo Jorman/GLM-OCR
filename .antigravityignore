@@ -1,0 +1,45 @@
+# Antigravity Ignore File
+# Prevents context bloat and token waste for AI agents
+
+# Byte-code & Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Virtual Environments
+venv/
+.venv/
+env/
+.env
+
+# Build & Packaging outputs
+build/
+dist/
+*.spec
+*.egg-info/
+
+# Scratch & Temporary directories
+.scratch/
+scratch/
+tmp/
+temp/
+
+# Large binary / test / scanned documents
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.tiff
+*.bmp
+*.webp
+!static/images/
+!static/img/
+*.zip
+*.tar.gz
+*.exe
+
+# System & Editor files
+.DS_Store
+Thumbs.db
+*.log

@@ -1,0 +1,265 @@
+/* Custom CSS for GLM-OCR Studio */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --bg-dark: #0f172a;
+    --card-dark: #1e293b;
+    --border-dark: #334155;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    color: var(--text-main);
+    background-color: var(--bg-dark);
+}
+
+code, pre, textarea.code-editor {
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #0f172a;
+}
+::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+}
+
+/* Split Pane Styling */
+.viewer-container {
+    height: calc(100vh - 65px);
+}
+
+.image-canvas-wrapper {
+    overflow: auto;
+    position: relative;
+    cursor: grab;
+    user-select: none;
+    background-color: #0b0f19;
+    background-image: 
+        radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0);
+    background-size: 24px 24px;
+}
+
+.image-canvas-wrapper:active {
+    cursor: grabbing;
+}
+
+.rendered-markdown {
+    line-height: 1.65;
+    font-size: 0.95rem;
+}
+
+.rendered-markdown h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin-top: 1.25rem;
+    margin-bottom: 0.75rem;
+    border-bottom: 1px solid #334155;
+    padding-bottom: 0.35rem;
+    color: #f1f5f9;
+}
+
+.rendered-markdown h2 {
+    font-size: 1.35rem;
+    font-weight: 600;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    color: #e2e8f0;
+}
+
+.rendered-markdown h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin-top: 0.75rem;
+    margin-bottom: 0.4rem;
+    color: #cbd5e1;
+}
+
+.rendered-markdown p {
+    margin-bottom: 0.85rem;
+}
+
+.rendered-markdown table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: 0.9rem;
+    background-color: #1e293b;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+}
+
+.rendered-markdown th {
+    background-color: #0f172a;
+    color: #38bdf8;
+    font-weight: 600;
+    text-align: left;
+    padding: 0.65rem 0.85rem;
+    border: 1px solid #334155;
+}
+
+.rendered-markdown td {
+    padding: 0.6rem 0.85rem;
+    border: 1px solid #334155;
+    color: #e2e8f0;
+}
+
+.rendered-markdown strong,
+.rendered-markdown b {
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.rendered-markdown u,
+.rendered-markdown ins {
+    text-decoration: underline;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 3px;
+    text-decoration-color: #38bdf8;
+}
+
+.rendered-markdown em,
+.rendered-markdown i {
+    font-style: italic;
+    color: #cbd5e1;
+}
+
+.rendered-markdown del,
+.rendered-markdown s {
+    text-decoration: line-through;
+    color: #64748b;
+}
+
+.rendered-markdown mark {
+    background-color: rgba(234, 179, 8, 0.25);
+    color: #fde047;
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
+}
+
+.rendered-markdown td strong,
+.rendered-markdown td b {
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.rendered-markdown td u,
+.rendered-markdown td ins {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+    text-decoration-color: #38bdf8;
+    color: #f8fafc;
+}
+
+.rendered-markdown table td strong,
+.rendered-markdown table td b {
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.rendered-markdown table td u,
+.rendered-markdown table td ins {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+    text-decoration-color: #38bdf8;
+    color: #f8fafc;
+}
+
+.rendered-markdown tr:nth-child(even) {
+    background-color: #1a2333;
+}
+
+.rendered-markdown ul, .rendered-markdown ol {
+    margin-left: 1.5rem;
+    margin-bottom: 0.85rem;
+}
+
+.rendered-markdown li {
+    margin-bottom: 0.25rem;
+}
+
+.rendered-markdown blockquote {
+    border-left: 4px solid #38bdf8;
+    padding-left: 1rem;
+    color: #94a3b8;
+    margin: 1rem 0;
+    font-style: italic;
+}
+
+.rendered-markdown code {
+    background: #0f172a;
+    padding: 0.15rem 0.35rem;
+    border-radius: 4px;
+    color: #38bdf8;
+    font-size: 0.88em;
+}
+
+.rendered-markdown pre {
+    background: #0b0f19;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    overflow-x: auto;
+    margin: 1rem 0;
+}
+
+.rendered-markdown pre code {
+    background: transparent;
+    padding: 0;
+    color: inherit;
+}
+
+/* KaTeX formula display */
+.katex-display {
+    margin: 1rem 0 !important;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0.5rem 0;
+}
+
+/* Drag drop highlight */
+.drag-over {
+    border-color: #38bdf8 !important;
+    background-color: rgba(56, 189, 248, 0.08) !important;
+}
+
+/* Splitters */
+#main-splitter, #sub-splitter {
+    user-select: none;
+    touch-action: none;
+}
+
+#main-splitter:hover, #sub-splitter:hover,
+.is-resizing #main-splitter, .is-resizing #sub-splitter {
+    background-color: #3b82f6 !important;
+}
+
+body.is-resizing {
+    cursor: col-resize !important;
+    user-select: none !important;
+}
+
+body.is-resizing * {
+    user-select: none !important;
+    pointer-events: none !important;
+}
+
+body.is-resizing #main-splitter, body.is-resizing #sub-splitter {
+    pointer-events: auto !important;
+}

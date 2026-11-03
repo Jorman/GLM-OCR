@@ -1,0 +1,100 @@
+# ==============================================================================
+# Git Ignore - Based on official github/gitignore (Python & Windows/OS)
+# ==============================================================================
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+*.spec
+
+# PyInstaller / Build artifacts
+*.manifest
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.pyre/
+.pytest_cache/
+
+# Environments & Virtual Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Local data, test scans, input documents and large binaries
+# (Never commit user documents or test PDFs/images meant for OCR)
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.tiff
+*.bmp
+*.webp
+!static/images/
+!static/img/
+
+# Agent Scratch & Temporary directories
+.scratch/
+scratch/
+tmp/
+temp/
+
+# Logs & Databases
+*.log
+*.sqlite3
+*.db
+
+# OS generated files (Windows / macOS / Linux)
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Editor / IDE directories
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace

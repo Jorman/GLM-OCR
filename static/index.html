@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="it" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GLM-OCR Studio | PDF & Scan to Clean Markdown</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            850: '#151f32',
+                            900: '#0f172a',
+                            950: '#0b0f19',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Marked.js (Markdown parsing) -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <!-- KaTeX for Math formulas ($...$ and $$...$$) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="bg-slate-900 text-slate-100 flex flex-col h-screen overflow-hidden select-none">
+
+    <!-- Top Navigation Bar -->
+    <header class="h-16 border-b border-slate-800 bg-slate-950 px-4 flex items-center justify-between shrink-0 z-20">
+        <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <i data-lucide="scan-text" class="w-5 h-5 text-white"></i>
+            </div>
+            <div>
+                <div class="flex items-center space-x-2">
+                    <span class="font-bold text-base tracking-tight text-white">GLM-OCR Studio</span>
+                    <span class="text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full font-medium">Local Ollama</span>
+                </div>
+                <div id="doc-title-badge" class="text-xs text-slate-400 truncate max-w-xs md:max-w-md hidden">
+                    Nessun documento caricato
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Controls: Ollama Status -->
+        <div class="hidden md:flex items-center space-x-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-full text-xs">
+            <div id="ollama-status-dot" class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></div>
+            <span id="ollama-status-text" class="text-slate-300 font-medium">Connessione a Ollama...</span>
+        </div>
+
+        <!-- Right Header Actions -->
+        <div class="flex items-center space-x-2">
+            <button id="btn-open-file" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition border border-slate-700">
+                <i data-lucide="upload" class="w-4 h-4"></i>
+                <span>Carica Documento</span>
+            </button>
+            <input type="file" id="file-input" class="hidden" accept=".pdf,image/png,image/jpeg,image/webp,image/tiff">
+
+            <button id="btn-export-doc" disabled class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:hover:bg-blue-600 text-white text-xs font-medium transition shadow-sm shadow-blue-600/30">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span class="hidden sm:inline">Esporta Markdown</span>
+            </button>
+
+            <button id="btn-open-settings" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 text-xs transition border border-slate-700" title="Impostazioni">
+                <i data-lucide="settings" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace Split Container -->
+    <main class="flex-1 flex overflow-hidden viewer-container relative">
+        
+        <!-- Dropzone Overlay (Visible when no doc is loaded or on dragover) -->
+        <div id="upload-overlay" class="absolute inset-0 bg-slate-950/95 z-30 flex flex-col items-center justify-center p-6 text-center">
+            <div id="drop-area" class="w-full max-w-xl border-2 border-dashed border-slate-700 hover:border-blue-500 rounded-2xl p-10 bg-slate-900/50 transition-all flex flex-col items-center cursor-pointer shadow-2xl">
+                <div class="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-4 shadow-inner">
+                    <i data-lucide="file-up" class="w-8 h-8"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-white mb-2">Trascina qui il tuo documento</h3>
+                <p class="text-sm text-slate-400 mb-6 max-w-sm">
+                    Supporta PDF multipagina, scansioni sporche, tabelle, bolle, ricevute o immagini (PNG, JPG, WEBP, TIFF).
+                </p>
+                <div class="flex items-center space-x-3">
+                    <button id="btn-browse-trigger" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm transition shadow-lg shadow-blue-600/30 flex items-center space-x-2">
+                        <i data-lucide="folder-open" class="w-4 h-4"></i>
+                        <span>Sfoglia File dal Computer</span>
+                    </button>
+                </div>
+                <div class="mt-8 flex items-center space-x-6 text-xs text-slate-500">
+                    <span class="flex items-center space-x-1.5"><i data-lucide="check" class="w-3.5 h-3.5 text-blue-400"></i> PDF to High-Res Image</span>
+                    <span class="flex items-center space-x-1.5"><i data-lucide="check" class="w-3.5 h-3.5 text-blue-400"></i> Local GLM-OCR</span>
+                    <span class="flex items-center space-x-1.5"><i data-lucide="check" class="w-3.5 h-3.5 text-blue-400"></i> Privacy 100% Locale</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- LEFT PANEL: Original Document Viewer -->
+        <section class="flex flex-col bg-slate-950 relative overflow-hidden shrink-0" id="left-pane" style="width: 50%;">
+            
+            <!-- Left Toolbar: Navigation and Zoom -->
+            <div class="h-11 border-b border-slate-800 bg-slate-900/80 px-3 flex items-center justify-between shrink-0 select-none text-xs">
+                <!-- Page Navigation -->
+                <div class="flex items-center space-x-1">
+                    <button id="btn-prev-page" disabled class="p-1.5 rounded hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent text-slate-300" title="Pagina precedente (Freccia Sinistra)">
+                        <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                    </button>
+                    <div class="flex items-center space-x-1 px-1.5 text-slate-300 font-medium">
+                        <span>Pag.</span>
+                        <input type="number" id="input-current-page" value="1" min="1" max="1" class="w-16 min-w-[62px] bg-slate-800 border border-slate-700 rounded px-1.5 py-0.5 text-center text-white focus:outline-none focus:border-blue-500 font-mono text-xs font-semibold">
+                        <span class="text-slate-500">/</span>
+                        <span id="label-total-pages" class="text-slate-400">1</span>
+                    </div>
+                    <button id="btn-next-page" disabled class="p-1.5 rounded hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent text-slate-300" title="Pagina successiva (Freccia Destra)">
+                        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- Zoom & View Tools -->
+                <div class="flex items-center space-x-1">
+                    <button id="btn-zoom-out" class="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200" title="Rimpicciolisci (-)">
+                        <i data-lucide="zoom-out" class="w-4 h-4"></i>
+                    </button>
+                    <span id="zoom-level-label" class="px-1 text-slate-400 font-mono text-[11px] w-12 text-center">100%</span>
+                    <button id="btn-zoom-in" class="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200" title="Ingrandisci (+)">
+                        <i data-lucide="zoom-in" class="w-4 h-4"></i>
+                    </button>
+                    
+                    <!-- Fit Width & Fit Height -->
+                    <button id="btn-zoom-fit-width" class="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 ml-1" title="Adatta Larghezza">
+                        <i data-lucide="scaling" class="w-4 h-4"></i>
+                    </button>
+                    <button id="btn-zoom-fit-height" class="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200" title="Adatta Altezza">
+                        <i data-lucide="unfold-vertical" class="w-4 h-4"></i>
+                    </button>
+                    <button id="btn-rotate" class="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200" title="Ruota 90°">
+                        <i data-lucide="rotate-cw" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Document Image Canvas Area -->
+            <div id="image-viewport" class="flex-1 image-canvas-wrapper p-4 relative overflow-auto flex">
+                <div id="image-container-wrapper" class="m-auto flex flex-col items-center">
+                    <div id="image-transform-container" class="transition-all duration-75 origin-top shrink-0">
+                        <img id="doc-page-image" src="" alt="Anteprima Pagina" class="shadow-2xl rounded border border-slate-800/80 pointer-events-none hidden">
+                    </div>
+                </div>
+                <div id="image-loading-spinner" class="hidden absolute inset-0 m-auto flex flex-col items-center justify-center space-y-2 text-blue-400">
+                    <i data-lucide="loader-2" class="w-8 h-8 animate-spin"></i>
+                    <span class="text-xs text-slate-400">Caricamento pagina...</span>
+                </div>
+            </div>
+
+            <!-- Page Thumbnail Strip (bottom navigation with arrows & Auto-Sync) -->
+            <div class="h-14 border-t border-slate-800 bg-slate-950 px-2 flex items-center justify-between shrink-0 select-none">
+                <!-- Scroll Left Arrow -->
+                <button id="btn-scroll-thumbs-left" class="p-1.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 shrink-0" title="Scorri miniature a sinistra">
+                    <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                </button>
+
+                <!-- Thumbnails Scrollable Container -->
+                <div id="thumbnail-strip" class="flex-1 px-2 flex items-center space-x-1.5 overflow-x-auto scroll-smooth">
+                    <!-- Mini thumbnails injected dynamically -->
+                </div>
+
+                <!-- Scroll Right Arrow -->
+                <button id="btn-scroll-thumbs-right" class="p-1.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 shrink-0 ml-1" title="Scorri miniature a destra">
+                    <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                </button>
+
+                <!-- Auto-Sync Toggle Button -->
+                <button id="btn-toggle-autosync" class="ml-2 flex items-center space-x-1.5 px-2.5 py-1 rounded bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/30 text-[11px] font-medium shrink-0 transition" title="Aggiorna automaticamente la visualizzazione durante l'estrazione batch">
+                    <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                    <span id="autosync-label">Auto-Sync: ON</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- MAIN RESIZER SPLITTER BAR -->
+        <div id="main-splitter" class="w-1.5 hover:w-2 bg-slate-800 hover:bg-blue-500 cursor-col-resize transition-all shrink-0 z-20 flex items-center justify-center group select-none border-x border-slate-900" title="Trascina per ridimensionare il visualizzatore e lo studio">
+            <div class="h-8 w-0.5 bg-slate-600 group-hover:bg-white rounded-full"></div>
+        </div>
+
+        <!-- RIGHT PANEL: OCR Result, Comparison & Markdown Studio -->
+        <section class="flex-1 flex flex-col bg-slate-900 relative overflow-hidden min-w-[280px]" id="right-pane">
+            
+            <!-- Right Top Toolbar: Tabs, Prompt Preset, Actions -->
+            <div class="h-11 border-b border-slate-800 bg-slate-900 px-3 flex items-center justify-between shrink-0 text-xs">
+                
+                <!-- View Mode Tabs -->
+                <div class="flex items-center space-x-1 bg-slate-800/80 p-0.5 rounded-lg border border-slate-700/60">
+                    <button id="tab-formatted" class="flex items-center space-x-1 px-2.5 py-1 rounded-md bg-blue-600 text-white font-medium shadow-sm transition">
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                        <span>Formattato</span>
+                    </button>
+                    <button id="tab-raw" class="flex items-center space-x-1 px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 transition">
+                        <i data-lucide="code" class="w-3.5 h-3.5"></i>
+                        <span>Raw Markdown</span>
+                    </button>
+                    <button id="tab-split" class="flex items-center space-x-1 px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 transition">
+                        <i data-lucide="columns" class="w-3.5 h-3.5"></i>
+                        <span>Affiancato</span>
+                    </button>
+                    <button id="tab-logs" class="flex items-center space-x-1 px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 transition" title="Log in tempo reale dell'inferenza">
+                        <i data-lucide="terminal" class="w-3.5 h-3.5"></i>
+                        <span>Log Console</span>
+                    </button>
+                </div>
+
+                <!-- Prompt Preset Selector -->
+                <div class="flex items-center space-x-1.5">
+                    <label class="text-slate-400 hidden lg:inline">Modalità:</label>
+                    <select id="select-prompt-preset" class="bg-slate-800 border border-slate-700 rounded-md px-2 py-1 text-slate-200 text-xs focus:outline-none focus:border-blue-500">
+                        <option value="text">Testo Generale</option>
+                        <option value="table">Tabelle Strutturate</option>
+                        <option value="formula">Formule Matematiche</option>
+                        <option value="custom">Prompt Personalizzato...</option>
+                    </select>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex items-center space-x-1.5">
+                    <button id="btn-copy-md" disabled class="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 disabled:opacity-40" title="Copia Markdown negli Appunti">
+                        <i data-lucide="copy" class="w-4 h-4"></i>
+                    </button>
+                    <button id="btn-process-page" disabled class="flex items-center space-x-1 px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-medium transition shadow-sm">
+                        <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
+                        <span>Elabora Pagina</span>
+                    </button>
+                    <button id="btn-process-all" disabled class="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 text-white font-medium transition" title="Elabora tutte le pagine in batch">
+                        <i data-lucide="zap" class="w-3.5 h-3.5 fill-current"></i>
+                        <span class="hidden xl:inline">Tutte</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Page Status & Batch Progress Bar -->
+            <div id="status-bar" class="bg-slate-950/60 border-b border-slate-800 px-3 py-1.5 flex items-center justify-between text-xs shrink-0">
+                <div class="flex items-center space-x-2">
+                    <span id="page-status-badge" class="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-800 text-slate-400">
+                        In attesa di elaborazione
+                    </span>
+                    <span id="page-duration-label" class="text-slate-500 font-mono text-[11px] hidden">⏱️ 0.0s</span>
+                    <span id="page-streaming-indicator" class="text-blue-400 font-mono text-[11px] hidden flex items-center space-x-1">
+                        <i data-lucide="radio" class="w-3 h-3 animate-ping"></i>
+                        <span>Streaming attivo...</span>
+                    </span>
+                    <button id="btn-cancel-page-ocr" class="hidden ml-1 px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 border border-rose-500/40 text-[11px] font-medium flex items-center space-x-1 transition" title="Interrompi elaborazione pagina corrente">
+                        <i data-lucide="square" class="w-3 h-3 fill-current"></i>
+                        <span>Interrompi</span>
+                    </button>
+                </div>
+                
+                <!-- Batch Processing Progress Indicator -->
+                <div id="batch-progress-box" class="hidden flex items-center space-x-2">
+                    <span id="batch-progress-text" class="text-slate-400 text-[11px]">Pagina 1 di 4</span>
+                    <div class="w-24 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div id="batch-progress-bar" class="h-full bg-emerald-500 transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <button id="btn-cancel-batch" class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 border border-rose-500/40 text-[11px] font-medium flex items-center space-x-1 transition" title="Interrompi elaborazione batch">
+                        <i data-lucide="square" class="w-3 h-3 fill-current"></i>
+                        <span>Interrompi</span>
+                    </button>
+                </div>
+
+                <div class="flex items-center space-x-2">
+                    <button id="btn-save-edit" class="hidden px-2 py-0.5 rounded bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 text-[11px] font-medium transition">
+                        Salva Modifiche
+                    </button>
+                </div>
+            </div>
+
+            <!-- Custom Prompt Input Box (Toggleable) -->
+            <div id="custom-prompt-container" class="hidden bg-slate-850 p-2 border-b border-slate-800 flex items-center space-x-2 shrink-0">
+                <input type="text" id="input-custom-prompt" placeholder="Inserisci il prompt per GLM-OCR (es. Text Recognition: o schema JSON)..." class="flex-1 bg-slate-900 border border-slate-700 rounded px-2.5 py-1 text-xs text-white focus:outline-none focus:border-blue-500">
+            </div>
+
+            <!-- OCR Display Workspace Area -->
+            <div class="flex-1 flex overflow-hidden relative">
+                
+                <!-- FORMATTED VIEW CONTAINER -->
+                <div id="view-formatted" class="flex-1 p-6 overflow-y-auto rendered-markdown">
+                    <div id="formatted-placeholder" class="h-full flex flex-col items-center justify-center text-center text-slate-500 p-8">
+                        <div class="w-12 h-12 rounded-xl bg-slate-800/80 flex items-center justify-center text-slate-400 mb-3">
+                            <i data-lucide="file-text" class="w-6 h-6"></i>
+                        </div>
+                        <h4 class="text-slate-300 font-medium text-sm mb-1">Nessun testo estratto per questa pagina</h4>
+                        <p class="text-xs text-slate-500 max-w-sm mb-4">
+                            Fai clic su "Elabora Pagina" per visualizzare lo streaming in tempo reale di tabelle, formule e testo in Markdown pulito.
+                        </p>
+                    </div>
+                    <div id="formatted-content" class="hidden"></div>
+                </div>
+
+                <!-- RAW VIEW CONTAINER -->
+                <div id="view-raw" class="flex-1 hidden flex flex-col overflow-hidden bg-slate-950">
+                    <textarea id="raw-editor" class="flex-1 w-full bg-slate-950 text-slate-200 code-editor p-4 text-xs leading-relaxed resize-none focus:outline-none border-none" placeholder="I token appariranno in streaming qui in tempo reale..." spellcheck="false"></textarea>
+                </div>
+
+                <!-- SPLIT VIEW CONTAINER (Both Side by Side) -->
+                <div id="view-split" class="flex-1 hidden flex overflow-hidden">
+                    <div id="split-raw-pane" class="flex flex-col bg-slate-950 overflow-hidden shrink-0" style="width: 50%;">
+                        <div class="bg-slate-900 px-3 py-1 border-b border-slate-800 text-[11px] font-mono text-slate-400 flex justify-between items-center shrink-0">
+                            <span>RAW EDITOR</span>
+                        </div>
+                        <textarea id="raw-editor-split" class="flex-1 w-full bg-slate-950 text-slate-200 code-editor p-3 text-xs leading-relaxed resize-none focus:outline-none overflow-y-auto" spellcheck="false"></textarea>
+                    </div>
+
+                    <!-- SUB RESIZER BETWEEN RAW AND PREVIEW -->
+                    <div id="sub-splitter" class="w-1.5 hover:w-2 bg-slate-800 hover:bg-blue-500 cursor-col-resize transition-all shrink-0 z-10 flex items-center justify-center group select-none border-x border-slate-900" title="Trascina per ridimensionare editor e preview">
+                        <div class="h-8 w-0.5 bg-slate-600 group-hover:bg-white rounded-full"></div>
+                    </div>
+
+                    <div id="split-formatted-pane" class="flex-1 flex flex-col overflow-hidden bg-slate-900 min-w-[150px]">
+                        <div class="bg-slate-900 px-3 py-1 border-b border-slate-800 text-[11px] font-mono text-slate-400 shrink-0">
+                            <span>PREVIEW FORMATTATA</span>
+                        </div>
+                        <div id="formatted-content-split" class="flex-1 p-4 overflow-y-auto rendered-markdown text-xs"></div>
+                    </div>
+                </div>
+
+                <!-- LOG CONSOLE TAB CONTAINER -->
+                <div id="view-logs" class="flex-1 hidden flex flex-col overflow-hidden bg-slate-950 font-mono text-xs">
+                    <div class="bg-slate-900 px-4 py-2 border-b border-slate-800 flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <i data-lucide="terminal" class="w-4 h-4 text-blue-400"></i>
+                            <span class="text-slate-300 font-semibold">Registro Eventi & Inferenza Ollama</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button id="btn-copy-logs" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] transition">Copia Log</button>
+                            <button id="btn-clear-logs" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 text-[11px] transition">Cancella</button>
+                        </div>
+                    </div>
+                    <div id="log-terminal-output" class="flex-1 p-4 overflow-y-auto space-y-1 text-slate-300 select-text leading-relaxed">
+                        <!-- Log messages will appear here -->
+                    </div>
+                </div>
+
+
+            </div>
+        </section>
+    </main>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="px-5 py-4 border-b border-slate-800 flex items-center justify-between shrink-0">
+                <h3 class="font-semibold text-sm text-white flex items-center space-x-2">
+                    <i data-lucide="sliders" class="w-4 h-4 text-blue-400"></i>
+                    <span>Impostazioni & Connessione Ollama</span>
+                </h3>
+                <button id="btn-close-settings" class="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            
+            <div class="p-5 space-y-4 text-xs overflow-y-auto flex-1">
+                <!-- Server Ollama URL & Test -->
+                <div>
+                    <label class="block text-slate-300 font-medium mb-1">Indirizzo Server Ollama</label>
+                    <div class="flex space-x-2">
+                        <input type="text" id="setting-ollama-url" value="http://localhost:11434" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white font-mono focus:outline-none focus:border-blue-500">
+                        <button id="btn-test-connection" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium border border-slate-700 flex items-center space-x-1.5 transition">
+                            <i data-lucide="activity" class="w-3.5 h-3.5 text-blue-400"></i>
+                            <span>Test Connessione</span>
+                        </button>
+                    </div>
+                    <div id="connection-status-feedback" class="mt-1.5 hidden text-[11px] flex items-center space-x-1"></div>
+                </div>
+
+                <!-- Modello & Selezione Ufficiale -->
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-slate-300 font-medium">Modello Ufficiale GLM-OCR</label>
+                        <span id="model-status-badge" class="text-[11px] hidden font-mono px-1.5 py-0.5 rounded"></span>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex space-x-2">
+                            <select id="select-installed-models" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white font-mono focus:outline-none focus:border-blue-500">
+                                <option value="glm-ocr:latest">glm-ocr:latest (Ufficiale - Consigliato)</option>
+                                <option value="glm-ocr:q8_0">glm-ocr:q8_0 (Ufficiale - Quantizzato 8-bit)</option>
+                            </select>
+                            <input type="hidden" id="setting-model-name" value="glm-ocr:latest">
+                        </div>
+
+                        <!-- Bottone Scarica / Pull Modello -->
+                        <div id="pull-model-container" class="hidden p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 flex flex-col space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-amber-300 font-medium flex items-center space-x-1.5 text-xs">
+                                    <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400 shrink-0"></i>
+                                    <span>Modello non trovato sul server Ollama specificato</span>
+                                </span>
+                                <button id="btn-pull-model" class="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-medium text-xs transition flex items-center space-x-1.5">
+                                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                                    <span>Scarica glm-ocr (1-Click)</span>
+                                </button>
+                            </div>
+                            <!-- Barra progresso download -->
+                            <div id="pull-progress-box" class="hidden space-y-1">
+                                <div class="flex justify-between text-[11px] text-slate-400">
+                                    <span id="pull-status-text">Avvio download...</span>
+                                    <span id="pull-percentage" class="font-mono text-amber-400">0%</span>
+                                </div>
+                                <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                                    <div id="pull-progress-bar" class="bg-amber-500 h-1.5 rounded-full transition-all duration-150" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 pt-1">
+                    <div>
+                        <label class="block text-slate-300 font-medium mb-1">Risoluzione PDF (DPI)</label>
+                        <select id="setting-pdf-dpi" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+                            <option value="150">150 DPI (Veloce)</option>
+                            <option value="200" selected>200 DPI (Bilanciato)</option>
+                            <option value="300">300 DPI (Massima qualità)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-slate-300 font-medium mb-1">Temperatura</label>
+                        <input type="number" id="setting-temperature" value="0.1" step="0.05" min="0" max="1" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white font-mono focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+
+                <div class="p-3 rounded-lg bg-blue-500/5 border border-blue-500/20 text-slate-400">
+                    <p class="leading-relaxed">
+                        I parametri di contesto (<code class="text-blue-300 font-mono">num_ctx: 8192</code>, <code class="text-blue-300 font-mono">num_predict: 4096</code>) sono attivi per consentire l'estrazione completa di intere pagine senza troncamento.
+                    </p>
+                </div>
+            </div>
+
+            <div class="px-5 py-3 border-t border-slate-800 bg-slate-950 flex justify-end space-x-2 shrink-0">
+                <button id="btn-save-settings" class="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs transition">
+                    Salva Impostazioni
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
