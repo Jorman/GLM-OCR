@@ -5,27 +5,33 @@ echo ========================================================
 echo       Building GLM-OCR Studio Standalone Executable
 echo ========================================================
 
-echo Chiusura di eventuali istanze precedenti in esecuzione...
+echo Closing any existing running instances...
 taskkill /F /IM GLM-OCR-Studio.exe >nul 2>&1
 
-echo Pulizia delle cartelle build e dist...
+echo Cleaning build and dist directories...
 if exist build rmdir /s /q build
 if exist dist rmdir /s /q dist
 
-echo Installazione e verifica dipendenze di build...
+echo Verifying and updating glm-ocr:latest model in local Ollama...
+where ollama >nul 2>nul
+if %ERRORLEVEL% equ 0 (
+    ollama pull glm-ocr:latest
+)
+
+echo Installing and verifying build dependencies...
 python -m pip install pyinstaller pywebview
 
-echo Avvio compilazione con PyInstaller...
+echo Starting compilation with PyInstaller...
 python -m PyInstaller --clean --noconfirm --onedir --noconsole --name "GLM-OCR-Studio" --add-data "static;static" --collect-all uvicorn --collect-all fastapi --collect-all webview run.py
 
 if %ERRORLEVEL% equ 0 (
     echo.
     echo ========================================================
-    echo Build completata con successo!
-    echo Il pacchetto eseguibile si trova in: dist\GLM-OCR-Studio\
+    echo Build completed successfully!
+    echo Standalone executable directory: dist\GLM-OCR-Studio\
     echo ========================================================
 ) else (
     echo.
-    echo ERRORE: La build con PyInstaller e fallita.
+    echo ERROR: PyInstaller build failed.
 )
 pause
