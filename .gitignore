@@ -93,6 +93,9 @@ $RECYCLE.BIN/
 .Spotlight-V100
 .Trashes
 
+# Local project documentation & specifications
+docs/
+
 # Editor / IDE directories
 .vscode/
 .idea/
